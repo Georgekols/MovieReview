@@ -55,7 +55,7 @@ public class MovieReview
 	    public void map(Object index, Text value, Context context) throws IOException, InterruptedException 
 	    {
 
-			ArrayList<String> accWords = new ArrayList<>();
+		ArrayList<String> accWords = new ArrayList<>();
 	    	StringTokenizer itr = new StringTokenizer(value.toString(), "\r");	// Tokenizer for line from file
 
 	    	while (itr.hasMoreTokens())
@@ -71,10 +71,6 @@ public class MovieReview
 						context.write(new IntWritable(score), new Text(words[i]));
 					}
 				}
-
-
-	    		// Write, i.e. emit word as key and 1 as value (IntWritable(1))
-
 
 	    	}
 
@@ -106,44 +102,32 @@ public class MovieReview
 			HashMap<String, Integer> wordCounts = new HashMap<>();
 
 
-				for (Text x : values) {
-					words.add(x.toString());
+			for (Text x : values) {
+				words.add(x.toString());
+			}
+
+			for(int i=0; i<words.size(); i++) {
+
+				String word = words.get(i);
+				int count = Collections.frequency(words, word);
+				wordCounts.put(word, count);
+			}
+
+			System.out.println(wordCounts.values()); //for debug
+
+			int maxValueInMap = (Collections.max(wordCounts.values()));  // This will return max value in the Hashmap
+
+			for (Map.Entry<String, Integer> entry : wordCounts.entrySet()) {  // Iterate through hashmap
+
+				if (entry.getValue() == maxValueInMap) {
+
+					//System.out.println(entry.getKey());
+					String common = entry.getKey();
+					Text mostCommon = new Text(common);
+					context.write(key, mostCommon);
+
 				}
-
-				for(int i=0; i<words.size(); i++) {
-
-					String word = words.get(i);
-					int count = Collections.frequency(words, word);
-					wordCounts.put(word, count);
-				}
-
-				System.out.println(wordCounts.values());
-
-				int maxValueInMap = (Collections.max(wordCounts.values()));  // This will return max value in the Hashmap
-
-				for (Map.Entry<String, Integer> entry : wordCounts.entrySet()) {  // Iterate through hashmap
-
-					if (entry.getValue() == maxValueInMap) {
-
-						//System.out.println(entry.getKey());
-						String common = entry.getKey();
-						Text mostCommon = new Text(common);
-						context.write(key, mostCommon);
-
-					}
-				}
-
-
-
-
-			// Iterate through the values for the given key and sum them (essentially add
-			// all the 1s, so count, except that it might be called more than once (or combined),
-			// so must be sum, not ++1)
-
-
-			// Set value of result to sum
-			//IntWritable result = new IntWritable(sum);
-			// Emit key and result (i.e word and count).
+			}
 		}
 
 //	    public void setup(Context context)
@@ -167,6 +151,8 @@ public class MovieReview
 	  {		
 	    Configuration conf = new Configuration();
 	    Job job = Job.getInstance(conf, "Movie Rating Words");
+		  
+	    job.addCacheFile(new URI("exclude.txt"));
 	    job.setJarByClass(MovieReview.class);
 	    
 	    // Set mapper class to TokenizerMapper defined above
